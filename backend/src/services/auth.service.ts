@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { Secret, SignOptions } from "jsonwebtoken";
 import { User } from "../models/User.model";
 import { hashPassword, comparePassword } from "../utils/hash";
 import { env } from "../config/env";
@@ -18,16 +18,13 @@ export const registerUser = async (
   const user = await User.create({
     name,
     email,
-    password: hashedPassword
+    password: hashedPassword,
   });
 
   return user;
 };
 
-export const loginUser = async (
-  email: string,
-  password: string
-) => {
+export const loginUser = async (email: string, password: string) => {
   const user = await User.findOne({ email });
   if (!user) {
     throw new Error("Invalid credentials");
@@ -38,16 +35,24 @@ export const loginUser = async (
     throw new Error("Invalid credentials");
   }
 
-  const token = jwt.sign({ id: user._id }, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN
-  });
+  const payload = { id: user._id.toString() };
+
+  const options: SignOptions = {
+  expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"],
+};
+
+  const token = jwt.sign(
+    payload,
+    env.JWT_SECRET as Secret,
+    options
+  );
 
   return {
     token,
     user: {
-      id: user._id,
+      id: user._id.toString(),
       name: user.name,
-      email: user.email
-    }
+      email: user.email,
+    },
   };
 };
